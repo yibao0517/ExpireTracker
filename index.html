@@ -58,6 +58,11 @@ header{
 }
 
 /* 整条背景色 */
+.e-expired{
+    background:#e0e0e0;
+    color:#888;
+}
+
 .e-urgent{ background:#ffe5e5; }
 .e-warning{ background:#fff4cc; }
 .e-safe{ background:#e8f9ec; }
@@ -165,9 +170,18 @@ function render(){
         const card=document.createElement("div");
         card.className="card";
 
-        if(days<=3) card.classList.add("e-urgent");
-        else if(days<=7) card.classList.add("e-warning");
-        else card.classList.add("e-safe");
+if(days < 0){
+    card.classList.add("e-expired");
+}
+else if(days <= 3){
+    card.classList.add("e-urgent");
+}
+else if(days <= 7){
+    card.classList.add("e-warning");
+}
+else{
+    card.classList.add("e-safe");
+}
 
         card.innerHTML=`
             <div style="font-weight:bold;font-size:18px;">${item.name}</div>
@@ -245,3 +259,4 @@ render();
 
 </body>
 </html>
+
