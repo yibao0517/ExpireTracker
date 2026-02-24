@@ -118,125 +118,128 @@ input{
 </div>
 
 <script>
+let items = JSON.parse(localStorage.getItem("items") || "[]");
+let openedItemId = null; // 当前打开的条目
 
-let items = JSON.parse(localStorage.getItem("items")) || [];
-let activeCard = null; // 当前展开的卡片
-
-function save(){
+function save() {
     localStorage.setItem("items", JSON.stringify(items));
 }
 
-function render(){
-    const list=document.getElementById("list");
-    list.innerHTML="";
-    const today=new Date();
+function daysLeft(dateStr) {
+    const today = new Date();
+    const target = new Date(dateStr);
+    return Math.ceil((target - today) / (1000 * 60 * 60 * 24));
+}
 
-    items.sort((a,b)=>new Date(a.expireDate)-new Date(b.expireDate));
+function getColor(days) {
+    if (days <= 3) return "#ff4d4d";
+    if (days <= 7) return "#ffd633";
+    return "#4CAF50";
+}
 
-    items.forEach((item,index)=>{
-        const expire=new Date(item.expireDate);
-        const diff=Math.ceil((expire-today)/(1000*60*60*24));
+function render() {
+    const list = document.getElementById("list");
+    list.innerHTML = "";
 
-        let className="card";
+    items.sort((a,b)=> new Date(a.date)-new Date(b.date));
 
-        if(diff<=3){ className+=" e-urgent"; }
-        else if(diff<=7){ className+=" e-warning"; }
-        else{ className+=" e-safe"; }
+    items.forEach(item => {
+        const days = daysLeft(item.date);
 
-        list.innerHTML+=`
-        <div class="swipe-container">
-            <div class="delete-btn" onclick="event.stopPropagation(); confirmEat(${index})">已吃</div>
-            <div class="${className}" 
-                ontouchstart="startSwipe(event,this)" 
-                ontouchmove="moveSwipe(event,this)" 
-                ontouchend="endSwipe(event,this)">
-                <div><b>${item.name}</b></div>
-                <div>到期：${item.expireDate}</div>
-                <div class="days">
-                    ${diff<0?"已过期 "+Math.abs(diff)+" 天":"还有 "+diff+" 天"}
-                </div>
+        const wrapper = document.createElement("div");
+        wrapper.className = "swipe-wrapper";
+
+        const swipeItem = document.createElement("div");
+        swipeItem.className = "swipe-item";
+        swipeItem.style.background = getColor(days);
+
+        swipeItem.innerHTML = `
+            <div>
+                <div style="font-weight:bold;font-size:18px;">${item.name}</div>
+                <div>到期：${item.date}</div>
+                <div style="font-weight:bold;">还有 ${days} 天</div>
             </div>
-        </div>
         `;
+
+        const action = document.createElement("div");
+        action.className = "swipe-action";
+        action.innerText = "已吃";
+
+        action.onclick = (e) => {
+            e.stopPropagation();
+            if(confirm("确认已吃？")){
+                items = items.filter(i => i.id !== item.id);
+                save();
+                render();
+            }
+        };
+
+        wrapper.appendChild(swipeItem);
+        wrapper.appendChild(action);
+
+        // 滑动逻辑
+        let startX = 0;
+        let currentX = 0;
+
+        swipeItem.addEventListener("touchstart", e => {
+            startX = e.touches[0].clientX;
+
+            // 自动关闭其他已展开
+            document.querySelectorAll(".swipe-item").forEach(el=>{
+                if(el !== swipeItem){
+                    el.style.transform = "translateX(0)";
+                }
+            });
+
+            openedItemId = null;
+        });
+
+        swipeItem.addEventListener("touchmove", e => {
+            currentX = e.touches[0].clientX;
+            let diff = currentX - startX;
+
+            if(diff < 0){
+                swipeItem.style.transform = `translateX(${diff}px)`;
+            }
+        });
+
+        swipeItem.addEventListener("touchend", e => {
+            let diff = currentX - startX;
+
+            if(diff < -80){
+                swipeItem.style.transform = "translateX(-100px)";
+                openedItemId = item.id;
+            } else {
+                swipeItem.style.transform = "translateX(0)";
+                openedItemId = null;
+            }
+        });
+
+        list.appendChild(wrapper);
     });
 }
 
-let startX=0;
-
-function startSwipe(e,el){
-    startX=e.touches[0].clientX;
-
-    // 如果已有展开的，先关闭
-    if(activeCard && activeCard !== el){
-        activeCard.style.transform="translateX(0)";
-        activeCard=null;
-    }
-
-    e.stopPropagation();
-}
-
-function moveSwipe(e,el){
-    let diff=e.touches[0].clientX-startX;
-
-    if(diff<0 && diff>-90){
-        el.style.transform=`translateX(${diff}px)`;
-    }
-}
-
-function endSwipe(e,el){
-    let diff=e.changedTouches[0].clientX-startX;
-
-    if(diff<-50){
-        el.style.transform="translateX(-90px)";
-        activeCard = el;
-    }else{
-        el.style.transform="translateX(0)";
-        activeCard = null;
-    }
-}
-
-function closeAll(){
-    if(activeCard){
-        activeCard.style.transform="translateX(0)";
-        activeCard=null;
-    }
-}
-
-function confirmEat(index){
-    if(confirm("确认已吃？")){
-        items.splice(index,1);
-        save();
-        render();
-    }
-}
-
 function addItem(){
-    const name=document.getElementById("name").value;
-    const expireDate=document.getElementById("expireDate").value;
+    const name = document.getElementById("name").value;
+    const date = document.getElementById("date").value;
 
-    if(!name||!expireDate){
-        alert("请填写完整");
-        return;
-    }
+    if(!name || !date) return;
 
-    items.push({name,expireDate});
+    items.push({
+        id: Date.now(),
+        name,
+        date
+    });
+
     save();
-    closeModal();
     render();
-}
 
-function openModal(){
-    document.getElementById("modal").style.display="block";
-}
-
-function closeModal(){
-    document.getElementById("modal").style.display="none";
-    document.getElementById("name").value="";
+    document.getElementById("name").value = "";
 }
 
 render();
-
 </script>
 
 </body>
 </html>
+
