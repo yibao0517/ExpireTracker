@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>保质期管家</title>
+<title>还有这些没吃哦</title>
 
 <style>
 body{
@@ -160,7 +160,7 @@ function render(){
         btn.innerText="已吃";
         btn.onclick=(e)=>{
             e.stopPropagation();
-            if(confirm("确认已吃？")){
+            if(confirm("确定把他吃掉啦？")){
                 items=items.filter(i=>i.id!==item.id);
                 save();
                 render();
@@ -259,4 +259,5 @@ render();
 
 </body>
 </html>
+
 
