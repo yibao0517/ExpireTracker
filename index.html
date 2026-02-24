@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>保质期管家</title>
+<title>还有啥吃的</title>
 
 <style>
 body{
@@ -140,7 +140,7 @@ input{
 <body>
 
 <header class="top-bar">
-    <div>保质期管家</div>
+    <div>还有啥吃的</div>
     <div class="add-btn" onclick="openModal()">＋</div>
 </header>
 
@@ -149,9 +149,9 @@ input{
 <div class="modal" id="modal">
     <div class="close-btn" onclick="closeModal()">✕</div>
     <div class="modal-content">
-        <h2>新增物品</h2>
+        <h2>得到什么好吃的啦！</h2>
         <div class="form-row">
-            <input id="name" type="text" placeholder="物品名称">
+            <input id="name" type="text" placeholder="名称">
             <input id="expireDate" type="date">
         </div>
         <button class="save-btn" onclick="addItem()">保存</button>
@@ -192,7 +192,7 @@ function render(){
         btn.innerText="已吃";
         btn.onclick=(e)=>{
             e.stopPropagation();
-            if(confirm("确认已吃？")){
+            if(confirm("确定吃掉啦？")){
                 items=items.filter(i=>i.id!==item.id);
                 save();
                 render();
@@ -295,3 +295,4 @@ render();
 
 </body>
 </html>
+
