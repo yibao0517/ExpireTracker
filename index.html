@@ -62,8 +62,7 @@ body{
 /* 列表 */
 #list{
     padding:15px;
-    padding: bottom 130px;
-}
+    padding-bottom:130px;
 
 .swipe-container{
     position:relative;
@@ -127,7 +126,7 @@ body{
     display:none;
     z-index:999;
 
-    display:flex;
+    display:none;
     justify-content:center;
     align-items:flex-end; /* 贴近下半部分 */
 }
@@ -214,7 +213,7 @@ input{
 <div id="list"></div>
 
 <div class="modal" id="modal">
-    <div class="close-btn" onclick="closeModal()">✕</div>
+    
 
     <div class="modal-content">
         <h2>又得到什么好吃的啦！</h2>
@@ -355,28 +354,47 @@ function addItem(){
     closeModal();
 }
 
-function closeModal(){
-    document.getElementById("modal").style.display="none";
-    document.querySelector(".fab").style.display="flex";
-}
-function closeModal(){
-    document.getElementById("modal").style.display="none";
+function openModal(){
+    const modal = document.getElementById("modal");
+    modal.style.display = "flex";
+    document.querySelector(".fab").style.display = "none";
 }
 
-render();
-let startEdgeX = 0;
+function closeModal(){
+    const modal = document.getElementById("modal");
+    modal.style.display = "none";
+    document.querySelector(".fab").style.display = "flex";
+}
+let startY = 0;
 
-document.getElementById("modal").addEventListener("touchstart", function(e){
-    startEdgeX = e.touches[0].clientX;
+const modal = document.getElementById("modal");
+const modalContent = document.querySelector(".modal-content");
+
+modalContent.addEventListener("touchstart", function(e){
+    startY = e.touches[0].clientY;
 });
 
-document.getElementById("modal").addEventListener("touchend", function(e){
-    let endX = e.changedTouches[0].clientX;
+modalContent.addEventListener("touchmove", function(e){
+    let currentY = e.touches[0].clientY;
+    let diff = currentY - startY;
 
-    if(startEdgeX < 40 && endX - startEdgeX > 80){
-        closeModal();
+    if(diff > 0){
+        modalContent.style.transform = `translateY(${diff}px)`;
     }
 });
+
+modalContent.addEventListener("touchend", function(e){
+    let endY = e.changedTouches[0].clientY;
+    let diff = endY - startY;
+
+    if(diff > 100){
+        closeModal();
+        modalContent.style.transform = "translateY(0)";
+    }else{
+        modalContent.style.transform = "translateY(0)";
+    }
+});
+render();
 
 </script>
 
