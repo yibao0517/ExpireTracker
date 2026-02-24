@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>保质期管家</title>
+<style>
+body{
+    font-family: -apple-system;
+    background:#f2f2f7;
+    padding:20px;
+}
+h1{
+    text-align:center;
+}
+.card{
+    background:white;
+    padding:15px;
+    margin-bottom:10px;
+    border-radius:12px;
+}
+.expired{background:#ffe5e5;}
+.warning{background:#fff5cc;}
+button{
+    padding:8px 12px;
+    border:none;
+    border-radius:8px;
+    background:#007aff;
+    color:white;
+}
+input{
+    width:100%;
+    padding:8px;
+    margin-bottom:10px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>保质期管家</h1>
+
+<div class="card">
+<input id="name" placeholder="物品名称">
+<input type="date" id="expireDate">
+<input type="number" id="remindDays" placeholder="提前几天提醒">
+<button onclick="addItem()">添加</button>
+</div>
+
+<div id="list"></div>
+
+<script>
+let items = JSON.parse(localStorage.getItem("items")) || [];
+
+function save(){
+    localStorage.setItem("items", JSON.stringify(items));
+}
+
+function addItem(){
+    const name = document.getElementById("name").value;
+    const expireDate = document.getElementById("expireDate").value;
+    const remindDays = parseInt(document.getElementById("remindDays").value) || 0;
+
+    if(!name || !expireDate){
+        alert("请填写完整信息");
+        return;
+    }
+
+    items.push({name, expireDate, remindDays});
+    save();
+    render();
+}
+
+function render(){
+    const list = document.getElementById("list");
+    list.innerHTML="";
+
+    const today = new Date();
+
+    items.forEach((item,index)=>{
+        const expire = new Date(item.expireDate);
+        const diff = Math.ceil((expire - today)/(1000*60*60*24));
+
+        let className="card";
+
+        if(diff < 0){
+            className+=" expired";
+        }else if(diff <= item.remindDays){
+            className+=" warning";
+            notify(item.name,diff);
+        }
+
+        list.innerHTML+=`
+            <div class="${className}">
+                <b>${item.name}</b><br>
+                还有 ${diff} 天过期<br>
+                <button onclick="removeItem(${index})">删除</button>
+            </div>
+        `;
+    });
+}
+
+function removeItem(index){
+    items.splice(index,1);
+    save();
+    render();
+}
+
+function notify(name,diff){
+    if(Notification.permission==="granted"){
+        new Notification(name+" 即将过期",{
+            body:"还有 "+diff+" 天过期"
+        });
+    }
+}
+
+if("Notification" in window){
+    Notification.requestPermission();
+}
+
+render();
+</script>
+
+</body>
+</html>
