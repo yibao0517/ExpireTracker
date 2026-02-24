@@ -35,24 +35,15 @@ header{
 .card{
     padding:15px;
     border-radius:16px;
-    transition:transform 0.3s ease;
-    color:#000;
+    transition:transform 0.25s ease;
+    background:white;
 }
 
-/* 整条背景色 */
-.e-urgent{
-    background:#ffe5e5;
-}
+/* 整条颜色 */
+.e-urgent{ background:#ffe5e5; }
+.e-warning{ background:#fff4cc; }
+.e-safe{ background:#e8f9ec; }
 
-.e-warning{
-    background:#fff7d6;
-}
-
-.e-safe{
-    background:#e8f9ec;
-}
-
-/* 已吃按钮默认隐藏在右侧 */
 .delete-btn{
     position:absolute;
     right:0;
@@ -67,7 +58,6 @@ header{
     font-weight:bold;
 }
 
-/* 文字 */
 .days{
     font-size:18px;
     font-weight:bold;
@@ -112,13 +102,13 @@ input{
 </style>
 </head>
 
-<body>
+<body onclick="closeAll()">
 
 <header>保质期管家</header>
 
 <div id="list"></div>
 
-<div class="fab" onclick="openModal()">+</div>
+<div class="fab" onclick="event.stopPropagation(); openModal()">+</div>
 
 <div class="modal" id="modal">
     <h3>新增物品</h3>
@@ -130,6 +120,7 @@ input{
 <script>
 
 let items = JSON.parse(localStorage.getItem("items")) || [];
+let activeCard = null; // 当前展开的卡片
 
 function save(){
     localStorage.setItem("items", JSON.stringify(items));
@@ -148,17 +139,13 @@ function render(){
 
         let className="card";
 
-        if(diff<=3){
-            className+=" e-urgent";
-        }else if(diff<=7){
-            className+=" e-warning";
-        }else{
-            className+=" e-safe";
-        }
+        if(diff<=3){ className+=" e-urgent"; }
+        else if(diff<=7){ className+=" e-warning"; }
+        else{ className+=" e-safe"; }
 
         list.innerHTML+=`
         <div class="swipe-container">
-            <div class="delete-btn" onclick="confirmEat(${index})">已吃</div>
+            <div class="delete-btn" onclick="event.stopPropagation(); confirmEat(${index})">已吃</div>
             <div class="${className}" 
                 ontouchstart="startSwipe(event,this)" 
                 ontouchmove="moveSwipe(event,this)" 
@@ -178,12 +165,20 @@ let startX=0;
 
 function startSwipe(e,el){
     startX=e.touches[0].clientX;
+
+    // 如果已有展开的，先关闭
+    if(activeCard && activeCard !== el){
+        activeCard.style.transform="translateX(0)";
+        activeCard=null;
+    }
+
+    e.stopPropagation();
 }
 
 function moveSwipe(e,el){
     let diff=e.touches[0].clientX-startX;
 
-    if(diff<0 && diff>-100){
+    if(diff<0 && diff>-90){
         el.style.transform=`translateX(${diff}px)`;
     }
 }
@@ -193,13 +188,22 @@ function endSwipe(e,el){
 
     if(diff<-50){
         el.style.transform="translateX(-90px)";
+        activeCard = el;
     }else{
         el.style.transform="translateX(0)";
+        activeCard = null;
+    }
+}
+
+function closeAll(){
+    if(activeCard){
+        activeCard.style.transform="translateX(0)";
+        activeCard=null;
     }
 }
 
 function confirmEat(index){
-    if(confirm("确定吃了没浪费哦？")){
+    if(confirm("确认已吃？")){
         items.splice(index,1);
         save();
         render();
