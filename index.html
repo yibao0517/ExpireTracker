@@ -32,18 +32,7 @@ header{
     border-radius:16px;
 }
 
-.card{
-    padding:15px;
-    border-radius:16px;
-    transition:transform 0.25s ease;
-    background:white;
-}
-
-/* 整条颜色 */
-.e-urgent{ background:#ffe5e5; }
-.e-warning{ background:#fff4cc; }
-.e-safe{ background:#e8f9ec; }
-
+/* 删除按钮在底层 */
 .delete-btn{
     position:absolute;
     right:0;
@@ -56,7 +45,22 @@ header{
     align-items:center;
     justify-content:center;
     font-weight:bold;
+    z-index:1;
 }
+
+/* 卡片在上层 */
+.card{
+    padding:15px;
+    border-radius:16px;
+    transition:transform 0.25s ease;
+    position:relative;
+    z-index:2;
+}
+
+/* 整条背景色 */
+.e-urgent{ background:#ffe5e5; }
+.e-warning{ background:#fff4cc; }
+.e-safe{ background:#e8f9ec; }
 
 .days{
     font-size:18px;
@@ -102,13 +106,13 @@ input{
 </style>
 </head>
 
-<body onclick="closeAll()">
+<body>
 
 <header>保质期管家</header>
 
 <div id="list"></div>
 
-<div class="fab" onclick="event.stopPropagation(); openModal()">+</div>
+<div class="fab" onclick="openModal()">+</div>
 
 <div class="modal" id="modal">
     <h3>新增物品</h3>
@@ -118,108 +122,107 @@ input{
 </div>
 
 <script>
-let items = JSON.parse(localStorage.getItem("items") || "[]");
 
-function save() {
+let items = JSON.parse(localStorage.getItem("items") || "[]");
+let activeCard = null;
+
+function save(){
     localStorage.setItem("items", JSON.stringify(items));
 }
 
-function daysLeft(dateStr) {
+function daysLeft(dateStr){
     const today = new Date();
     const target = new Date(dateStr);
     today.setHours(0,0,0,0);
     target.setHours(0,0,0,0);
-    return Math.ceil((target - today) / (1000 * 60 * 60 * 24));
+    return Math.ceil((target - today)/(1000*60*60*24));
 }
 
-function render() {
-    const list = document.getElementById("list");
-    list.innerHTML = "";
+function render(){
+    const list=document.getElementById("list");
+    list.innerHTML="";
 
     items.sort((a,b)=> new Date(a.expireDate)-new Date(b.expireDate));
 
-    items.forEach(item => {
-
+    items.forEach(item=>{
         const days = daysLeft(item.expireDate);
 
-        const container = document.createElement("div");
-        container.className = "swipe-container";
+        const container=document.createElement("div");
+        container.className="swipe-container";
 
-        const card = document.createElement("div");
-        card.className = "card";
-
-        if(days <= 3) card.classList.add("e-urgent");
-        else if(days <=7) card.classList.add("e-warning");
-        else card.classList.add("e-safe");
-
-        card.innerHTML = `
-            <div style="font-weight:bold;font-size:18px;">${item.name}</div>
-            <div>到期：${item.expireDate}</div>
-            <div class="days">还有 ${days} 天</div>
-        `;
-
-        const btn = document.createElement("div");
-        btn.className = "delete-btn";
-        btn.innerText = "已吃";
-
-        btn.onclick = (e)=>{
+        const btn=document.createElement("div");
+        btn.className="delete-btn";
+        btn.innerText="已吃";
+        btn.onclick=(e)=>{
             e.stopPropagation();
             if(confirm("确认已吃？")){
-                items = items.filter(i=>i.id!==item.id);
+                items=items.filter(i=>i.id!==item.id);
                 save();
                 render();
             }
         };
 
-        container.appendChild(card);
-        container.appendChild(btn);
+        const card=document.createElement("div");
+        card.className="card";
 
-        // 滑动逻辑
-        let startX = 0;
-        let currentX = 0;
+        if(days<=3) card.classList.add("e-urgent");
+        else if(days<=7) card.classList.add("e-warning");
+        else card.classList.add("e-safe");
 
-        card.addEventListener("touchstart", e=>{
-            startX = e.touches[0].clientX;
+        card.innerHTML=`
+            <div style="font-weight:bold;font-size:18px;">${item.name}</div>
+            <div>到期：${item.expireDate}</div>
+            <div class="days">
+                ${days<0 ? "已过期 "+Math.abs(days)+" 天" : "还有 "+days+" 天"}
+            </div>
+        `;
 
-            // 自动关闭其他
-            document.querySelectorAll(".card").forEach(el=>{
-                if(el!==card){
-                    el.style.transform = "translateX(0)";
-                }
-            });
-        });
+        let startX=0;
+        let currentX=0;
 
-        card.addEventListener("touchmove", e=>{
-            currentX = e.touches[0].clientX;
-            let diff = currentX - startX;
+        card.addEventListener("touchstart",e=>{
+            startX=e.touches[0].clientX;
 
-            if(diff < 0){
-                card.style.transform = `translateX(${diff}px)`;
+            if(activeCard && activeCard!==card){
+                activeCard.style.transform="translateX(0)";
             }
         });
 
-        card.addEventListener("touchend", ()=>{
-            let diff = currentX - startX;
+        card.addEventListener("touchmove",e=>{
+            currentX=e.touches[0].clientX;
+            let diff=currentX-startX;
 
-            if(diff < -80){
-                card.style.transform = "translateX(-90px)";
+            if(diff<0 && diff>-90){
+                card.style.transform=`translateX(${diff}px)`;
+            }
+        });
+
+        card.addEventListener("touchend",()=>{
+            let diff=currentX-startX;
+
+            if(diff<-50){
+                card.style.transform="translateX(-90px)";
+                activeCard=card;
             }else{
-                card.style.transform = "translateX(0)";
+                card.style.transform="translateX(0)";
+                activeCard=null;
             }
         });
 
+        container.appendChild(btn);
+        container.appendChild(card);
         list.appendChild(container);
     });
 }
 
 function addItem(){
-    const name = document.getElementById("name").value;
-    const date = document.getElementById("expireDate").value;
+    const name=document.getElementById("name").value;
+    const date=document.getElementById("expireDate").value;
 
-    if(!name || !date) return;
+    if(!name||!date) return;
 
     items.push({
-        id: Date.now(),
+        id:Date.now(),
         name:name,
         expireDate:date
     });
@@ -236,16 +239,9 @@ function openModal(){
     document.getElementById("modal").style.display="block";
 }
 
-function closeAll(){
-    document.querySelectorAll(".card").forEach(el=>{
-        el.style.transform="translateX(0)";
-    });
-}
-
 render();
+
 </script>
 
 </body>
 </html>
-
-
