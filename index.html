@@ -39,12 +39,24 @@ header{
     transition:transform 0.3s ease;
 }
 
+.e-urgent{
+    border-left:6px solid #ff3b30;
+}
+
+.e-warning{
+    border-left:6px solid #ffcc00;
+}
+
+.e-safe{
+    border-left:6px solid #34c759;
+}
+
 .delete-btn{
     position:absolute;
     right:0;
     top:0;
     bottom:0;
-    width:80px;
+    width:90px;
     background:#ff3b30;
     color:white;
     display:flex;
@@ -52,14 +64,6 @@ header{
     justify-content:center;
     font-weight:bold;
     border-radius:16px;
-}
-
-.expired{
-    border-left:6px solid #ff3b30;
-}
-
-.warning{
-    border-left:6px solid #ff9500;
 }
 
 .days{
@@ -141,13 +145,22 @@ function render(){
         const diff=Math.ceil((expire-today)/(1000*60*60*24));
 
         let className="card";
-        if(diff<0){className+=" expired";}
-        else if(diff<=3){className+=" warning";}
+
+        if(diff<=3){
+            className+=" e-urgent";
+        }else if(diff<=7){
+            className+=" e-warning";
+        }else{
+            className+=" e-safe";
+        }
 
         list.innerHTML+=`
         <div class="swipe-container">
-            <div class="delete-btn" onclick="removeItem(${index})">删除</div>
-            <div class="${className}" ontouchstart="startSwipe(event,this)" ontouchmove="moveSwipe(event,this)" ontouchend="endSwipe(event,this)">
+            <div class="delete-btn" onclick="confirmEat(${index})">已吃</div>
+            <div class="${className}" 
+                ontouchstart="startSwipe(event,this)" 
+                ontouchmove="moveSwipe(event,this)" 
+                ontouchend="endSwipe(event,this)">
                 <div><b>${item.name}</b></div>
                 <div>到期：${item.expireDate}</div>
                 <div class="days">
@@ -175,16 +188,18 @@ function moveSwipe(e,el){
 function endSwipe(e,el){
     let diff=e.changedTouches[0].clientX-startX;
     if(diff<-50){
-        el.style.transform="translateX(-80px)";
+        el.style.transform="translateX(-90px)";
     }else{
         el.style.transform="translateX(0)";
     }
 }
 
-function removeItem(index){
-    items.splice(index,1);
-    save();
-    render();
+function confirmEat(index){
+    if(confirm("确认已吃？")){
+        items.splice(index,1);
+        save();
+        render();
+    }
 }
 
 function addItem(){
