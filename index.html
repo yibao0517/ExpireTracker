@@ -21,14 +21,12 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background: var(--bg);
     color: var(--text);
-    /* 关键：使用动态视口高度，防止地址栏/键盘干扰 */
     height: 100dvh; 
     overflow: hidden;
     display: flex;
     flex-direction: column;
 }
 
-/* 顶部标题 */
 header {
     padding: 20px;
     text-align: center;
@@ -40,7 +38,6 @@ header {
     flex-shrink: 0;
 }
 
-/* 列表区域 */
 #list-container {
     flex: 1;
     overflow-y: auto;
@@ -52,9 +49,12 @@ header {
 .swipe-item {
     position: relative;
     margin-bottom: 12px;
-    border-radius: 16px;
-    overflow: hidden;
-    background: transparent;
+    /* 只有这里保留圆角 */
+    border-radius: 16px; 
+    /* 关键：强制硬件加速裁剪，消除抗锯齿缝隙 */
+    overflow: hidden; 
+    transform: translateZ(0); /* 开启 GPU 加速，修复渲染瑕疵 */
+    background: var(--bg); /* 确保缝隙即使露出来也是背景色 */
 }
 
 .delete-action {
@@ -62,7 +62,7 @@ header {
     right: 0;
     top: 0;
     bottom: 0;
-    width: 80px;
+    width: 60px; /* 你的自定义宽度 */
     background: var(--danger);
     color: white;
     display: flex;
@@ -70,27 +70,32 @@ header {
     justify-content: center;
     font-weight: 600;
     z-index: 1;
+    /* 【关键修改】去掉圆角，或者设大一点 */
+    border-radius: 0; 
 }
-
 .card {
     position: relative;
     background: var(--card-bg);
     padding: 16px;
-    border-radius: 16px;
+    /* 【关键修改】去掉圆角！让父容器去裁剪它 */
+    border-radius: 0; 
+    /* 或者为了保险，设一个比父容器大很多的圆角，防止直角露出来，但通常 0 最好 */
+    /* border-radius: 20px;  <-- 如果 0 不行，试这个，但要大于父容器的 16px */
+    
     display: flex;
     justify-content: space-between;
     align-items: center;
     z-index: 2;
     transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    height: 70px; /* 固定高度以配合 Badge 90% */
+    height: 70px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    
 }
 
 .card-info { flex: 1; }
 .card-title { font-size: 17px; font-weight: 600; margin-bottom: 4px; }
 .card-date { font-size: 13px; color: var(--gray); }
 
-/* Badge 样式优化 */
 .badge {
     font-size: 58px;
     font-weight: 700;
@@ -109,13 +114,11 @@ header {
 .badge-warning { color: #FF9500; }
 .badge-safe { color: #34C759; }
 
-/* 状态背景色 */
 .status-expired { background: #f2f2f7; }
 .status-urgent { background: #ffe5e5; }
 .status-warning { background: #fff4cc; }
 .status-safe { background: #e8f9ec; }
 
-/* 浮动按钮 */
 .fab {
     position: fixed;
     right: 25px;
@@ -137,7 +140,6 @@ header {
 }
 .fab:active { transform: scale(0.95); }
 
-/* 弹窗遮罩 */
 .modal-overlay {
     position: fixed;
     inset: 0;
@@ -150,7 +152,6 @@ header {
 }
 .modal-overlay.active { display: flex; opacity: 1; }
 
-/* 弹窗内容 */
 .modal-panel {
     position: fixed;
     left: 0;
@@ -165,7 +166,6 @@ header {
     max-height: 90vh;
     display: flex;
     flex-direction: column;
-    /* 关键：允许内部滚动，防止键盘遮挡 */
     overflow-y: auto; 
     -webkit-overflow-scrolling: touch;
 }
@@ -188,7 +188,6 @@ header {
     flex-shrink: 0;
 }
 
-/* 表单行 */
 .input-row {
     display: flex;
     gap: 12px;
@@ -205,7 +204,7 @@ header {
     border: none;
     background: transparent;
     padding: 12px;
-    font-size: 16px; /* 防止 iOS 缩放 */
+    font-size: 16px;
     outline: none;
     color: var(--text);
 }
@@ -281,12 +280,13 @@ header {
         </div>
     </div>
 
-    <button class="save-btn" onclick="saveItem()">GET <!--  -->!</button>
+    <button class="save-btn" onclick="saveItem()">GET!</button>
 </div>
 
 <script>
-// --- 数据逻辑 ---
+// --- 唯一的数据与逻辑核心 ---
 let items = JSON.parse(localStorage.getItem('foods') || '[]');
+let panelStartY = 0; // 用于下拉关闭
 
 function render() {
     const list = document.getElementById('food-list');
@@ -299,16 +299,24 @@ function render() {
     }
     empty.style.display = 'none';
 
-    // 排序
     items.sort((a, b) => new Date(a.date) - new Date(b.date));
 
     items.forEach(item => {
         const days = getDays(item.date);
         let statusClass = 'status-safe', badgeClass = 'badge-safe', text = `${days}`;
         
-        if (days < 0) { statusClass = 'status-expired'; badgeClass = 'badge-expired'; text = `坏掉啦！`; }
-        else if (days <= 3) { statusClass = 'status-urgent'; badgeClass = 'badge-urgent'; text = days===0?'今天':`${days}`; }
-        else if (days <= 7) { statusClass = 'status-warning'; badgeClass = 'badge-warning'; }
+        if (days < 0) { 
+            statusClass = 'status-expired'; 
+            badgeClass = 'badge-expired'; 
+            text = `坏掉啦!`; 
+        } else if (days <= 3) { 
+            statusClass = 'status-urgent'; 
+            badgeClass = 'badge-urgent'; 
+            text = days===0 ? '今天' : `${days}`; 
+        } else if (days <= 7) { 
+            statusClass = 'status-warning'; 
+            badgeClass = 'badge-warning'; 
+        }
 
         const wrapper = document.createElement('div');
         wrapper.className = 'swipe-item';
@@ -338,15 +346,11 @@ function saveData() {
     render();
 }
 
-// --- 交互逻辑 ---
-
-// 滑动删除
+// 滑动删除逻辑
 function initSwipe(card) {
     let startX, currentX, isSwiping = false;
-    const parent = card.parentElement;
     
     card.addEventListener('touchstart', e => {
-        // 关闭其他打开的
         document.querySelectorAll('.card').forEach(c => {
             if(c !== card) c.style.transform = 'translateX(0)';
         });
@@ -376,216 +380,6 @@ function initSwipe(card) {
         }
     });
     
-    // 点击复位
-    card.addEventListener('click', () => {
-        if(card.style.transform.includes('-80')) {
-            card.style.transform = 'translateX(0)';
-        }
-    });
-}
-
-function confirmDelete(id) {
-    if(confirm('确定已经吃完了吗？')) {
-        items = items.filter(i => i.id !== id);
-        saveData();
-    } else {
-        // 取消则复位卡片
-        const card = document.getElementById(`card-${id}`);
-        if(card) card.style.transform = 'translateX(0)';
-    }
-}
-
-// --- 弹窗与键盘处理 (核心修复部分) ---
-
-const modalOverlay = document.getElementById('modal-overlay');
-const modalPanel = document.getElementById('modal-panel');
-const inputName = document.getElementById('input-name');
-const inputDate = document.getElementById('input-date');
-
-function openModal() {
-    modalOverlay.classList.add('active');
-    // 稍微延迟让动画生效后再聚焦
-    setTimeout(() => {
-        modalPanel.classList.add('active');
-        inputName.focus();
-        // 关键：聚焦后强制滚动到底部，确保输入框可见
-        scrollToInput();
-    }, 100);
-}
-
-function closeModal() {
-    modalPanel.classList.remove('active');
-    setTimeout(() => {
-        modalOverlay.classList.remove('active');
-        inputName.blur();
-        inputDate.blur();
-        inputName.value = '';
-        inputDate.value = '';
-    }, 300);
-}
-
-function handleOverlayClick(e) {
-    if(e.target === modalOverlay) closeModal();
-}
-
-// 核心：当输入框聚焦时，确保弹窗滚动到合适位置
-function scrollToInput() {
-    // 简单粗暴但有效：将输入框滚动到可视区域中间
-    // 使用 setTimeout 等待键盘弹起动画
-    setTimeout(() => {
-        inputName.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 300);
-    
-    // 再次检查，防止某些安卓机慢半拍
-    setTimeout(() => {
-        inputName.scrollIntoView({ behavior: 'auto', block: 'center' });
-    }, 600);
-}
-
-// 监听聚焦事件，确保每次聚焦都触发滚动
-inputName.addEventListener('focus', scrollToInput);
-inputDate.addEventListener('focus', scrollToInput);
-
-// 保存物品
-function saveItem() {
-    const name = inputName.value.trim();
-    const date = inputDate.value;
-    
-    if(!name || !date) {
-        alert('请填写名称并选择日期');
-        return;
-    }
-    
-    items.push({ id: Date.now(), name, date });
-    saveData();
-    closeModal();
-}
-
-// 下拉关闭手势
-let startY = 0;
-modalPanel.addEventListener('touchstart', e => {
-    startY = e.touches[0].clientY;
-    modalPanel.style.transition = 'none';
-}, {passive: true});
-
-modalPanel.addEventListener('touchmove', e => {
-    const y = e.touches[0].clientY;
-    const diff = y - startY;
-    if(diff > 0) {
-        modalPanel.style.transform = `translateY(${diff}px)`;
-    }
-}, {passive: true});
-
-modalPanel.addEventListener('touchend', e => {
-    const y = e.changedTouches[0].clientY;
-    const diff = y - startY;
-    modalPanel.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)';
-    
-    if(diff > 100) {
-        closeModal();
-    } else {
-        modalPanel.style.transform = 'translateY(0)';
-    }
-});
-
-// 初始化
-render();
-// 设置日期最小值为今天
-document.getElementById('input-date').min = new Date().toISOString().split('T')[0];
-
-</script>
-<script>
-// --- 数据逻辑 ---
-let items = JSON.parse(localStorage.getItem('foods') || '[]');
-
-function render() {
-    const list = document.getElementById('food-list');
-    const empty = document.getElementById('empty-state');
-    list.innerHTML = '';
-
-    if (items.length === 0) {
-        empty.style.display = 'block';
-        return;
-    }
-    empty.style.display = 'none';
-
-    // 排序
-    items.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-    items.forEach(item => {
-        const days = getDays(item.date);
-        let statusClass = 'status-safe', badgeClass = 'badge-safe', text = `剩${days}天`;
-        
-        if (days < 0) { statusClass = 'status-expired'; badgeClass = 'badge-expired'; text = `过期${Math.abs(days)}天`; }
-        else if (days <= 3) { statusClass = 'status-urgent'; badgeClass = 'badge-urgent'; text = days===0?'今天':`剩${days}天`; }
-        else if (days <= 7) { statusClass = 'status-warning'; badgeClass = 'badge-warning'; }
-
-        const wrapper = document.createElement('div');
-        wrapper.className = 'swipe-item';
-        wrapper.innerHTML = `
-            <div class="delete-action" onclick="confirmDelete(${item.id})">已吃</div>
-            <div class="card ${statusClass}" id="card-${item.id}">
-                <div class="card-info">
-                    <div class="card-title">${item.name}</div>
-                    <div class="card-date">${item.date}</div>
-                </div>
-                <div class="badge ${badgeClass}">${text}</div>
-            </div>
-        `;
-        list.appendChild(wrapper);
-        initSwipe(wrapper.querySelector('.card'));
-    });
-}
-
-function getDays(dateStr) {
-    const today = new Date(); today.setHours(0,0,0,0);
-    const target = new Date(dateStr); target.setHours(0,0,0,0);
-    return Math.ceil((target - today) / (1000*60*60*24));
-}
-
-function saveData() {
-    localStorage.setItem('foods', JSON.stringify(items));
-    render();
-}
-
-// --- 交互逻辑 ---
-
-// 滑动删除
-function initSwipe(card) {
-    let startX, currentX, isSwiping = false;
-    
-    card.addEventListener('touchstart', e => {
-        // 关闭其他打开的
-        document.querySelectorAll('.card').forEach(c => {
-            if(c !== card) c.style.transform = 'translateX(0)';
-        });
-        startX = e.touches[0].clientX;
-        isSwiping = true;
-        card.style.transition = 'none';
-    }, {passive: true});
-
-    card.addEventListener('touchmove', e => {
-        if(!isSwiping) return;
-        currentX = e.touches[0].clientX;
-        const diff = currentX - startX;
-        if(diff < 0 && diff > -80) {
-            card.style.transform = `translateX(${diff}px)`;
-        }
-    }, {passive: true});
-
-    card.addEventListener('touchend', () => {
-        if(!isSwiping) return;
-        isSwiping = false;
-        const diff = currentX - startX;
-        card.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)';
-        if(diff < -40) {
-            card.style.transform = 'translateX(-80px)';
-        } else {
-            card.style.transform = 'translateX(0)';
-        }
-    });
-    
-    // 点击复位
     card.addEventListener('click', () => {
         if(card.style.transform && card.style.transform.includes('-80')) {
             card.style.transform = 'translateX(0)';
@@ -598,14 +392,12 @@ function confirmDelete(id) {
         items = items.filter(i => i.id !== id);
         saveData();
     } else {
-        // 取消则复位卡片
         const card = document.getElementById(`card-${id}`);
         if(card) card.style.transform = 'translateX(0)';
     }
 }
 
-// --- 弹窗与键盘处理 ---
-
+// 弹窗控制
 const modalOverlay = document.getElementById('modal-overlay');
 const modalPanel = document.getElementById('modal-panel');
 const inputName = document.getElementById('input-name');
@@ -628,7 +420,6 @@ function closeModal() {
         inputDate.blur();
         inputName.value = '';
         inputDate.value = '';
-        // 重置 transform 以防万一
         modalPanel.style.transform = ''; 
     }, 300);
 }
@@ -663,12 +454,8 @@ function saveItem() {
     closeModal();
 }
 
-// --- 修复：下拉关闭手势逻辑 (重新绑定) ---
-let panelStartY = 0;
-
+// 下拉关闭手势 (唯一绑定)
 modalPanel.addEventListener('touchstart', e => {
-    // 如果正在输入，先不处理下拉，或者可以选择先 blur
-    // 这里为了兼容，只要滑动距离够大就关闭
     panelStartY = e.touches[0].clientY;
     modalPanel.style.transition = 'none';
 }, {passive: true});
@@ -676,7 +463,6 @@ modalPanel.addEventListener('touchstart', e => {
 modalPanel.addEventListener('touchmove', e => {
     const y = e.touches[0].clientY;
     const diff = y - panelStartY;
-    // 只有向下滑动才处理
     if(diff > 0) {
         modalPanel.style.transform = `translateY(${diff}px)`;
     }
@@ -688,11 +474,9 @@ modalPanel.addEventListener('touchend', e => {
     
     modalPanel.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)';
     
-    // 滑动超过 100px 或者 速度很快 则关闭
     if(diff > 100) {
         closeModal();
     } else {
-        // 否则弹回原位
         modalPanel.style.transform = 'translateY(0)';
     }
 });
@@ -702,5 +486,4 @@ render();
 document.getElementById('input-date').min = new Date().toISOString().split('T')[0];
 </script>
 </body>
-
 </html>
