@@ -281,7 +281,7 @@ header {
         </div>
     </div>
 
-    <button class="save-btn" onclick="saveItem()">确认添加</button>
+    <button class="save-btn" onclick="saveItem()">GET <!--  -->!</button>
 </div>
 
 <script>
@@ -306,8 +306,8 @@ function render() {
         const days = getDays(item.date);
         let statusClass = 'status-safe', badgeClass = 'badge-safe', text = `${days}`;
         
-        if (days < 0) { statusClass = 'status-expired'; badgeClass = 'badge-expired'; text = `过期${Math.abs(days)}天`; }
-        else if (days <= 3) { statusClass = 'status-urgent'; badgeClass = 'badge-urgent'; text = days===0?'今天':`剩${days}天`; }
+        if (days < 0) { statusClass = 'status-expired'; badgeClass = 'badge-expired'; text = `坏掉啦！`; }
+        else if (days <= 3) { statusClass = 'status-urgent'; badgeClass = 'badge-urgent'; text = days===0?'今天':`${days}`; }
         else if (days <= 7) { statusClass = 'status-warning'; badgeClass = 'badge-warning'; }
 
         const wrapper = document.createElement('div');
@@ -495,4 +495,5 @@ document.getElementById('input-date').min = new Date().toISOString().split('T')[
 
 </script>
 </body>
+
 </html>
