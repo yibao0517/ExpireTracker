@@ -1,343 +1,498 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>还有这些没吃呢</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>还这些没吃呢</title>
 <style>
-/* ... (前面的 CSS 保持不变) ... */
-body{
-    margin:0;
-    font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background:#f2f2f7;
-    -webkit-tap-highlight-color: transparent;
-    /* 防止整体页面被键盘挤压变形 */
-    height: 100vh; 
-    overflow: hidden; 
+:root {
+    --bg: #F2F2F7;
+    --card-bg: #FFFFFF;
+    --primary: #007AFF;
+    --danger: #FF3B30;
+    --text: #000000;
+    --gray: #8E8E93;
 }
-/* ... (中间 CSS 保持不变) ... */
 
-/* 弹窗优化 */
-.modal{
-    position:fixed;
-    top:0;
-    left:0;
-    right:0;
-    bottom:0;
-    background: rgba(0,0,0,0.3);
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
-    display:none;
-    z-index:2000;
-    justify-content:center;
-    align-items:flex-end;
-    /* 关键：确保遮罩层占满整个屏幕，即使键盘弹出 */
-    height: 100vh; 
-    width: 100vw;
-}
-.modal.active {
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    /* 关键：使用动态视口高度，防止地址栏/键盘干扰 */
+    height: 100dvh; 
+    overflow: hidden;
     display: flex;
+    flex-direction: column;
 }
-.modal-content{
-    width:100%;
-    max-width:600px;
-    background:white;
-    border-top-left-radius:22px;
-    border-top-right-radius:22px;
-    padding:24px 20px 30px 20px;
-    box-shadow:0 -5px 25px rgba(0,0,0,0.1);
-    /* 初始状态 */
-    transform: translateY(100%); 
-    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    /* 关键：允许内容滚动，防止内部溢出 */
-    max-height: 90vh; 
+
+/* 顶部标题 */
+header {
+    padding: 20px;
+    text-align: center;
+    font-size: 20px;
+    font-weight: 700;
+    background: rgba(255,255,255,0.8);
+    backdrop-filter: blur(10px);
+    z-index: 10;
+    flex-shrink: 0;
+}
+
+/* 列表区域 */
+#list-container {
+    flex: 1;
     overflow-y: auto;
+    padding: 15px;
+    padding-bottom: 100px;
     -webkit-overflow-scrolling: touch;
 }
 
-/* 解决 iOS 键盘遮挡的核心类 */
-.modal-content.keyboard-open {
-    /* 当键盘打开时，通过 JS 动态调整这个值，或者使用 translate */
-    /* 这里我们主要靠 JS 动态控制 transform */
-    transition: none; /* 移除动画以保证跟手性 */
+.swipe-item {
+    position: relative;
+    margin-bottom: 12px;
+    border-radius: 16px;
+    overflow: hidden;
+    background: transparent;
 }
 
-/* ... (后续 CSS 保持不变) ... */
-.form-row{
-    display:flex;
-    gap:12px;
+.delete-action {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 80px;
+    background: var(--danger);
+    color: white;
+    display: flex;
     align-items: center;
-    background: #f2f2f7;
+    justify-content: center;
+    font-weight: 600;
+    z-index: 1;
+}
+
+.card {
+    position: relative;
+    background: var(--card-bg);
+    padding: 16px;
+    border-radius: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 2;
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    height: 70px; /* 固定高度以配合 Badge 90% */
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.card-info { flex: 1; }
+.card-title { font-size: 17px; font-weight: 600; margin-bottom: 4px; }
+.card-date { font-size: 13px; color: var(--gray); }
+
+/* Badge 样式优化 */
+.badge {
+    font-size: 58px;
+    font-weight: 700;
+    height: 90%;
+    line-height: 1;
+    min-width: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 12px;
+    background: transparent !important;
+    border-radius: 0;
+}
+.badge-expired { color: #8E8E93; }
+.badge-urgent { color: #FF3B30; }
+.badge-warning { color: #FF9500; }
+.badge-safe { color: #34C759; }
+
+/* 状态背景色 */
+.status-expired { background: #f2f2f7; }
+.status-urgent { background: #ffe5e5; }
+.status-warning { background: #fff4cc; }
+.status-safe { background: #e8f9ec; }
+
+/* 浮动按钮 */
+.fab {
+    position: fixed;
+    right: 25px;
+    bottom: 30px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.9);
+    backdrop-filter: blur(10px);
+    color: var(--primary);
+    font-size: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    z-index: 90;
+    border: none;
+    cursor: pointer;
+}
+.fab:active { transform: scale(0.95); }
+
+/* 弹窗遮罩 */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(5px);
+    z-index: 1000;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+.modal-overlay.active { display: flex; opacity: 1; }
+
+/* 弹窗内容 */
+.modal-panel {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--card-bg);
+    border-radius: 22px 22px 0 0;
+    padding: 24px 20px 40px;
+    z-index: 1001;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    /* 关键：允许内部滚动，防止键盘遮挡 */
+    overflow-y: auto; 
+    -webkit-overflow-scrolling: touch;
+}
+.modal-panel.active { transform: translateY(0); }
+
+.modal-handle {
+    width: 40px;
+    height: 5px;
+    background: #d1d1d6;
+    border-radius: 3px;
+    margin: 0 auto 20px;
+    flex-shrink: 0;
+}
+
+.modal-title {
+    text-align: center;
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 24px;
+    flex-shrink: 0;
+}
+
+/* 表单行 */
+.input-row {
+    display: flex;
+    gap: 12px;
+    background: #F2F2F7;
     padding: 6px;
     border-radius: 14px;
-    margin-bottom: 20px;
+    margin-bottom: 24px;
+    align-items: center;
+    flex-shrink: 0;
 }
-.form-row input[type="text"]{
+
+.input-row input[type="text"] {
     flex: 1;
     border: none;
     background: transparent;
     padding: 12px;
-    font-size: 16px; /* 防止 iOS 自动缩放 */
+    font-size: 16px; /* 防止 iOS 缩放 */
     outline: none;
-    color: #000;
+    color: var(--text);
 }
-/* ... (其余 CSS 不变) ... */
+
+.calendar-btn {
+    width: 48px;
+    height: 44px;
+    background: white;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    position: relative;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    flex-shrink: 0;
+}
+.calendar-btn input[type="date"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
+
+.save-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 14px;
+    font-size: 17px;
+    font-weight: 600;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.save-btn:active { opacity: 0.8; }
+
+.empty-state {
+    text-align: center;
+    color: var(--gray);
+    margin-top: 60px;
+    font-size: 15px;
+}
 </style>
 </head>
 <body>
 
-<!-- ... (HTML 结构不变) ... -->
-<header class="top-bar">
-    <div>还这些没吃呢</div>
-</header>
+<header>还这些没吃呢</header>
 
-<div class="fab" onclick="openModal()">＋</div>
-
-<div id="list"></div>
-
-<!-- 弹窗结构 -->
-<div class="modal" id="modal">
-    <div class="close-area" onclick="closeModal()" style="position:absolute; top:0; left:0; right:0; bottom:0; z-index:-1;"></div>
-    <div class="modal-content" id="modalContent">
-        <div class="modal-handle"></div>
-        <h2>新添了什么美味？</h2>
-        
-        <div class="form-row">
-            <input id="name" type="text" placeholder="食物名称 (如: 牛奶)" autocomplete="off">
-            <div class="calendar-wrapper">
-                <span>📅</span>
-                <input id="expireDate" type="date">
-            </div>
-        </div>
-
-        <button class="save-btn" onclick="addItem()">确认添加</button>
+<div id="list-container">
+    <div id="food-list"></div>
+    <div id="empty-state" class="empty-state" style="display:none;">
+        暂无记录<br>
     </div>
 </div>
 
+<button class="fab" onclick="openModal()">+</button>
+
+<!-- 弹窗 -->
+<div class="modal-overlay" id="modal-overlay" onclick="handleOverlayClick(event)"></div>
+<div class="modal-panel" id="modal-panel">
+    <div class="modal-handle"></div>
+    <div class="modal-title">又得到什么好吃的啦？</div>
+    
+    <div class="input-row">
+        <input type="text" id="input-name" placeholder="放这里！" autocomplete="off">
+        <div class="calendar-btn">
+            📅
+            <input type="date" id="input-date">
+        </div>
+    </div>
+
+    <button class="save-btn" onclick="saveItem()">确认添加</button>
+</div>
+
 <script>
-// ... (数据逻辑不变) ...
-let items = JSON.parse(localStorage.getItem("items") || "[]");
-let activeCard = null;
-// 记录原始视口高度
-let visualViewportHeight = window.innerHeight;
+// --- 数据逻辑 ---
+let items = JSON.parse(localStorage.getItem('foods') || '[]');
 
-function save(){
-    localStorage.setItem("items", JSON.stringify(items));
-}
+function render() {
+    const list = document.getElementById('food-list');
+    const empty = document.getElementById('empty-state');
+    list.innerHTML = '';
 
-// ... (daysLeft, render 函数不变) ...
-function daysLeft(dateStr){
-    const today = new Date();
-    const target = new Date(dateStr);
-    today.setHours(0,0,0,0);
-    target.setHours(0,0,0,0);
-    return Math.ceil((target - today)/(1000*60*60*24));
-}
-
-function render(){
-    // ... (render 函数内容完全不变，为节省篇幅省略，请使用之前的版本) ...
-    const list=document.getElementById("list");
-    list.innerHTML="";
-    if(items.length === 0) {
-        list.innerHTML = '<div style="text-align:center; color:#8e8e93; margin-top:50px; font-size:15px;">暂无记录<br>点击右上角 + 添加</div>';
+    if (items.length === 0) {
+        empty.style.display = 'block';
         return;
     }
-    items.sort((a,b)=> new Date(a.expireDate)-new Date(b.expireDate));
-    items.forEach(item=>{
-        const days = daysLeft(item.expireDate);
-        const container=document.createElement("div");
-        container.className="swipe-container";
-        const btn=document.createElement("div");
-        btn.className="delete-btn";
-        btn.innerText="已吃";
-        btn.onclick=(e)=>{
-            e.stopPropagation();
-            if(confirm(`确定"${item.name}"已经吃完了吗？`)){
-                items=items.filter(i=>i.id!==item.id);
-                save();
-                render();
-            }
-        };
-        const card=document.createElement("div");
-        card.className="card";
-        let statusClass = "e-safe";
-        let badgeClass = "badge-safe";
-        if(days < 0){ statusClass = "e-expired"; badgeClass = "badge-expired"; } 
-        else if(days <= 3){ statusClass = "e-urgent"; badgeClass = "badge-urgent"; } 
-        else if(days <= 7){ statusClass = "e-warning"; badgeClass = "badge-warning"; }
-        card.classList.add(statusClass);
-        const daysText = days < 0 ? `过期${Math.abs(days)}天` : (days === 0 ? '今天' : `剩${days}天`);
-        card.innerHTML=`
-            <div class="card-left">
-                <div class="card-title">${item.name}</div>
-                <div class="card-date">${item.expireDate}</div>
-            </div>
-            <div class="day-badge ${badgeClass}">
-                ${daysText}
+    empty.style.display = 'none';
+
+    // 排序
+    items.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    items.forEach(item => {
+        const days = getDays(item.date);
+        let statusClass = 'status-safe', badgeClass = 'badge-safe', text = `${days}`;
+        
+        if (days < 0) { statusClass = 'status-expired'; badgeClass = 'badge-expired'; text = `过期${Math.abs(days)}天`; }
+        else if (days <= 3) { statusClass = 'status-urgent'; badgeClass = 'badge-urgent'; text = days===0?'今天':`剩${days}天`; }
+        else if (days <= 7) { statusClass = 'status-warning'; badgeClass = 'badge-warning'; }
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'swipe-item';
+        wrapper.innerHTML = `
+            <div class="delete-action" onclick="confirmDelete(${item.id})">已吃</div>
+            <div class="card ${statusClass}" id="card-${item.id}">
+                <div class="card-info">
+                    <div class="card-title">${item.name}</div>
+                    <div class="card-date">${item.date}</div>
+                </div>
+                <div class="badge ${badgeClass}">${text}</div>
             </div>
         `;
-        // 滑动逻辑省略... (保持原样)
-        let startX=0, currentX=0, isSwiping = false;
-        card.addEventListener("touchstart",e=>{
-            if(activeCard && activeCard!==card){ activeCard.style.transform="translateX(0)"; activeCard = null; }
-            startX=e.touches[0].clientX; isSwiping = true; card.style.transition = "none";
-        }, {passive: true});
-        card.addEventListener("touchmove",e=>{
-            if(!isSwiping) return;
-            currentX=e.touches[0].clientX;
-            let diff=currentX-startX;
-            if(diff<0 && diff>-90){ card.style.transform=`translateX(${diff}px)`; }
-        }, {passive: true});
-        card.addEventListener("touchend",()=>{
-            if(!isSwiping) return;
-            isSwiping = false;
-            let diff=currentX-startX;
-            card.style.transition="transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)";
-            if(diff<-50){ card.style.transform="translateX(-80px)"; activeCard=card; } 
-            else { card.style.transform="translateX(0)"; activeCard=null; }
-        });
-        container.appendChild(btn);
-        container.appendChild(card);
-        list.appendChild(container);
+        list.appendChild(wrapper);
+        initSwipe(wrapper.querySelector('.card'));
     });
 }
 
-function addItem(){
-    const name=document.getElementById("name").value.trim();
-    const date=document.getElementById("expireDate").value;
-    if(!name || !date){ alert("请填写名称并选择日期哦！"); return; }
-    items.push({ id:Date.now(), name:name, expireDate:date });
-    save();
-    render();
-    document.getElementById("name").value="";
-    document.getElementById("expireDate").value="";
-    closeModal();
+function getDays(dateStr) {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const target = new Date(dateStr); target.setHours(0,0,0,0);
+    return Math.ceil((target - today) / (1000*60*60*24));
 }
 
-// --- 核心修改：处理键盘弹出逻辑 ---
+function saveData() {
+    localStorage.setItem('foods', JSON.stringify(items));
+    render();
+}
 
-const modal = document.getElementById("modal");
-const modalContent = document.getElementById("modalContent");
-const nameInput = document.getElementById("name");
-const dateInput = document.getElementById("expireDate");
+// --- 交互逻辑 ---
 
-function openModal(){
-    modal.classList.add("active");
-    // 重置 transform，确保从底部滑入
-    modalContent.style.transform = "translateY(0)"; 
-    document.querySelector(".fab").style.display = "none";
+// 滑动删除
+function initSwipe(card) {
+    let startX, currentX, isSwiping = false;
+    const parent = card.parentElement;
     
+    card.addEventListener('touchstart', e => {
+        // 关闭其他打开的
+        document.querySelectorAll('.card').forEach(c => {
+            if(c !== card) c.style.transform = 'translateX(0)';
+        });
+        startX = e.touches[0].clientX;
+        isSwiping = true;
+        card.style.transition = 'none';
+    }, {passive: true});
+
+    card.addEventListener('touchmove', e => {
+        if(!isSwiping) return;
+        currentX = e.touches[0].clientX;
+        const diff = currentX - startX;
+        if(diff < 0 && diff > -80) {
+            card.style.transform = `translateX(${diff}px)`;
+        }
+    }, {passive: true});
+
+    card.addEventListener('touchend', () => {
+        if(!isSwiping) return;
+        isSwiping = false;
+        const diff = currentX - startX;
+        card.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)';
+        if(diff < -40) {
+            card.style.transform = 'translateX(-80px)';
+        } else {
+            card.style.transform = 'translateX(0)';
+        }
+    });
+    
+    // 点击复位
+    card.addEventListener('click', () => {
+        if(card.style.transform.includes('-80')) {
+            card.style.transform = 'translateX(0)';
+        }
+    });
+}
+
+function confirmDelete(id) {
+    if(confirm('确定已经吃完了吗？')) {
+        items = items.filter(i => i.id !== id);
+        saveData();
+    } else {
+        // 取消则复位卡片
+        const card = document.getElementById(`card-${id}`);
+        if(card) card.style.transform = 'translateX(0)';
+    }
+}
+
+// --- 弹窗与键盘处理 (核心修复部分) ---
+
+const modalOverlay = document.getElementById('modal-overlay');
+const modalPanel = document.getElementById('modal-panel');
+const inputName = document.getElementById('input-name');
+const inputDate = document.getElementById('input-date');
+
+function openModal() {
+    modalOverlay.classList.add('active');
+    // 稍微延迟让动画生效后再聚焦
     setTimeout(() => {
-        nameInput.focus();
+        modalPanel.classList.add('active');
+        inputName.focus();
+        // 关键：聚焦后强制滚动到底部，确保输入框可见
+        scrollToInput();
+    }, 100);
+}
+
+function closeModal() {
+    modalPanel.classList.remove('active');
+    setTimeout(() => {
+        modalOverlay.classList.remove('active');
+        inputName.blur();
+        inputDate.blur();
+        inputName.value = '';
+        inputDate.value = '';
     }, 300);
 }
 
-function closeModal(){
-    modal.classList.remove("active");
-    document.querySelector(".fab").style.display = "flex";
-    nameInput.blur();
-    dateInput.blur();
-    // 恢复样式
-    modalContent.style.transform = ""; 
-    modalContent.classList.remove("keyboard-open");
+function handleOverlayClick(e) {
+    if(e.target === modalOverlay) closeModal();
 }
 
-// 监听视觉视口变化 (Visual Viewport API) - 最现代且有效的方法
-if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', () => {
-        if (!modal.classList.contains('active')) return;
-
-        const keyboardHeight = window.innerHeight - window.visualViewport.height;
-        
-        // 如果键盘高度大于 100px，认为键盘已打开
-        if (keyboardHeight > 100) {
-            modalContent.classList.add("keyboard-open");
-            // 将弹窗向上平移键盘的高度，留出一点空隙 (例如 20px)
-            // 注意：这里使用 translateY 负值来向上推
-            modalContent.style.transform = `translateY(-${keyboardHeight - 20}px)`;
-            
-            // 确保输入框在可视区域内 (可选，作为双重保险)
-            // nameInput.scrollIntoView({block: "center"}); 
-        } else {
-            // 键盘关闭，恢复原位
-            modalContent.classList.remove("keyboard-open");
-            modalContent.style.transform = "translateY(0)";
-        }
-    });
+// 核心：当输入框聚焦时，确保弹窗滚动到合适位置
+function scrollToInput() {
+    // 简单粗暴但有效：将输入框滚动到可视区域中间
+    // 使用 setTimeout 等待键盘弹起动画
+    setTimeout(() => {
+        inputName.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
+    
+    // 再次检查，防止某些安卓机慢半拍
+    setTimeout(() => {
+        inputName.scrollIntoView({ behavior: 'auto', block: 'center' });
+    }, 600);
 }
 
-// 兼容处理：针对部分不支持 visualViewport 的老设备，使用 focus/blur 监听
-nameInput.addEventListener('focus', function() {
-    if (!window.visualViewport) {
-        // 简单策略：给 body 或 modal 一个类，通过 CSS media query 或 JS 计算调整
-        // 这里采用直接延时检查高度的方法
-        setTimeout(() => {
-             const heightDiff = window.innerHeight - (document.documentElement.clientHeight || document.body.clientHeight);
-             if(heightDiff > 100) {
-                 modalContent.style.transform = `translateY(-${heightDiff}px)`;
-             }
-        }, 300);
-    }
-});
+// 监听聚焦事件，确保每次聚焦都触发滚动
+inputName.addEventListener('focus', scrollToInput);
+inputDate.addEventListener('focus', scrollToInput);
 
-nameInput.addEventListener('blur', function() {
-    if (!window.visualViewport) {
-        modalContent.style.transform = "translateY(0)";
-    }
-});
-
-// 下拉关闭逻辑 (保持原有，但增加对 transform 的复位保护)
-let startY = 0;
-let currentY = 0;
-let isKeyboardOpen = false;
-
-modalContent.addEventListener("touchstart", function(e){
-    startY = e.touches[0].clientY;
-    // 如果键盘开着，先不处理下拉，或者先收起键盘
-    if (document.activeElement === nameInput || document.activeElement === dateInput) {
-        // 可选：在这里调用 blur() 收起键盘再下拉，体验更佳
-        // document.activeElement.blur(); 
-        // return; 
-    }
-    this.style.transition = "none";
-}, {passive: true});
-
-modalContent.addEventListener("touchmove", function(e){
-    currentY = e.touches[0].clientY;
-    let diff = currentY - startY;
-    // 只有在键盘未遮挡或已处理偏移时才允许下拉
-    if(diff > 0){
-        // 如果当前有 translateY 偏移（因为键盘），需要在此基础上累加
-        const currentTransform = this.style.transform;
-        // 简单处理：如果键盘开着，下拉逻辑可能会冲突，建议键盘开启时禁止下拉关闭，或者先收起键盘
-        // 这里为了简单，如果检测到键盘高度，暂时禁止下拉关闭，避免计算复杂
-        if (modalContent.classList.contains("keyboard-open")) {
-           // 可以选择禁用下拉，或者让用户先点空白处收起键盘
-           return; 
-        }
-        this.style.transform = `translateY(${diff}px)`;
-    }
-}, {passive: true});
-
-modalContent.addEventListener("touchend", function(){
-    if (modalContent.classList.contains("keyboard-open")) {
-        // 键盘开启时，重置位置但不关闭，除非用户明确点击遮罩
-        this.style.transition = "transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)";
-        this.style.transform = ""; // 恢复到键盘撑起的状态 (由 resize 事件接管)
+// 保存物品
+function saveItem() {
+    const name = inputName.value.trim();
+    const date = inputDate.value;
+    
+    if(!name || !date) {
+        alert('请填写名称并选择日期');
         return;
     }
+    
+    items.push({ id: Date.now(), name, date });
+    saveData();
+    closeModal();
+}
 
-    let diff = currentY - startY;
-    this.style.transition = "transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)";
-    if(diff > 100){
+// 下拉关闭手势
+let startY = 0;
+modalPanel.addEventListener('touchstart', e => {
+    startY = e.touches[0].clientY;
+    modalPanel.style.transition = 'none';
+}, {passive: true});
+
+modalPanel.addEventListener('touchmove', e => {
+    const y = e.touches[0].clientY;
+    const diff = y - startY;
+    if(diff > 0) {
+        modalPanel.style.transform = `translateY(${diff}px)`;
+    }
+}, {passive: true});
+
+modalPanel.addEventListener('touchend', e => {
+    const y = e.changedTouches[0].clientY;
+    const diff = y - startY;
+    modalPanel.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)';
+    
+    if(diff > 100) {
         closeModal();
     } else {
-        this.style.transform = "translateY(0)";
+        modalPanel.style.transform = 'translateY(0)';
     }
 });
 
 // 初始化
 render();
+// 设置日期最小值为今天
+document.getElementById('input-date').min = new Date().toISOString().split('T')[0];
+
 </script>
 </body>
 </html>
