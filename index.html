@@ -4,204 +4,259 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>还有这些没吃呢</title>
-
 <style>
 body{
     margin:0;
-    font-family:-apple-system;
+    font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     background:#f2f2f7;
+    -webkit-tap-highlight-color: transparent;
 }
-
 /* 顶部栏 */
 .top-bar{
     display:flex;
-    justify-content:space-between;
+    justify-content:center;
     align-items:center;
     padding:20px;
-    background:white;
+    background:rgba(255,255,255,0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     font-size:20px;
-    font-weight:bold;
+    font-weight:700;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
 }
-
 .fab{
     position:fixed;
     right:25px;
     bottom:30px;
-    width:70px;
-    height:70px;
+    width:65px;
+    height:65px;
     border-radius:50%;
-
-    /* iOS 毛玻璃效果 */
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    background: rgba(255,255,255,0.6);
-
+    background: rgba(255,255,255,0.7);
     display:flex;
     align-items:center;
     justify-content:center;
-
-    font-size:38px;
+    font-size:40px;
     font-weight:300;
     color:#007aff;
-
-    box-shadow:
-        0 10px 30px rgba(0,0,0,0.15),
-        inset 0 1px 1px rgba(255,255,255,0.6);
-
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
     z-index:1000;
     transition:all 0.2s ease;
+    border: 1px solid rgba(255,255,255,0.5);
 }
-
-/* 按下效果 */
 .fab:active{
-    transform:scale(0.92);
-    box-shadow:
-        0 6px 15px rgba(0,0,0,0.2);
+    transform:scale(0.90);
+    background: rgba(230,230,230,0.7);
 }
-
 /* 列表 */
 #list{
     padding:15px;
-    padding-bottom:130px;
+    padding-bottom:120px;
 }
 .swipe-container{
     position:relative;
     overflow:hidden;
     margin-bottom:12px;
     border-radius:16px;
+    background: transparent;
 }
-
 .delete-btn{
     position:absolute;
     right:0;
     top:0;
     bottom:0;
-    width:90px;
+    width:80px;
     background:#ff3b30;
     color:white;
     display:flex;
     align-items:center;
     justify-content:center;
-    font-weight:bold;
+    font-weight:600;
+    font-size: 15px;
     z-index:1;
 }
-
-.card{
-    padding:15px;
-    border-radius:16px;
-    transition:transform 0.25s ease;
-    position:relative;
-    z-index:2;
+.card {
+    padding: 18px;
+    border-radius: 16px;
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    position: relative;
+    z-index: 2;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    height: 70px; /* 显式增加卡片高度，让 90% 的 badge 更大更美观 */
 }
-
-/* 颜色 */
-.e-expired{
-    background:#e0e0e0;
-    color:#888;
-}
-
+/* 颜色状态 */
+.e-expired{ background:#f2f2f7; }
 .e-urgent{ background:#ffe5e5; }
 .e-warning{ background:#fff4cc; }
 .e-safe{ background:#e8f9ec; }
 
-.days{
-    font-size:18px;
-    font-weight:bold;
-    margin-top:5px;
+.card-left{
+    display:flex;
+    flex-direction:column;
+    flex: 1;
 }
+.card-title{
+    font-size:17px;
+    font-weight:600;
+    color: #000;
+}
+.card-date{
+    font-size:13px;
+    color: #8e8e93;
+    margin-top:4px;
+}
+.day-badge {
+    font-size: 68px; /* 字体变大 */
+    font-weight: 700; /* 加粗字体 */
+    height: 190%; /* 高度占父容器 90% */
+    line-height: 1; /* 重置行高 */
+    min-width: 60px;
+    text-align: center;
+    margin-left: 12px;
+    
+    /* 布局调整以确保垂直居中 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    /* 移除背景色，只保留文字颜色 */
+    background: transparent !important; 
+    box-shadow: none;
+    border-radius: 0; /* 可选：如果需要圆角可以保留一点，如 8px，但纯数字通常不需要 */
+}
+/* 徽章颜色 */
+.badge-expired { color: #8e8e93; background: rgba(0,0,0,0.05); }
+.badge-urgent { color: #ff3b30; background: rgba(255, 59, 48, 0.15); }
+.badge-warning { color: #ff9500; background: rgba(255, 149, 0, 0.15); }
+.badge-safe { color: #34c759; background: rgba(52, 199, 89, 0.15); }
 
-/* 弹窗 */
+/* 弹窗优化 */
 .modal{
     position:fixed;
     top:0;
     left:0;
     right:0;
     bottom:0;
-
-    /* 半透明遮罩 */
-    background: rgba(0,0,0,0.25);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-
+    background: rgba(0,0,0,0.3);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
     display:none;
-    z-index:999;
-
-    display:none;
+    z-index:2000;
     justify-content:center;
-    align-items:flex-end; /* 贴近下半部分 */
+    align-items:flex-end;
 }
-
+.modal.active {
+    display: flex;
+}
 .modal-content{
     width:100%;
-    max-width:500px;
+    max-width:600px;
     background:white;
-    border-top-left-radius:25px;
-    border-top-right-radius:25px;
-    padding:30px 25px 40px 25px;
-
-    box-shadow:0 -10px 30px rgba(0,0,0,0.15);
+    border-top-left-radius:22px;
+    border-top-right-radius:22px;
+    padding:24px 20px 30px 20px;
+    box-shadow:0 -5px 25px rgba(0,0,0,0.1);
+    transform: translateY(0); /* 移除缩放，直接定位 */
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+.modal-handle {
+    width: 40px;
+    height: 5px;
+    background: #d1d1d6;
+    border-radius: 3px;
+    margin: 0 auto 20px auto;
+}
+.modal h2 {
+    text-align: center;
+    font-size: 18px;
+    margin-bottom: 20px;
+    font-weight: 600;
 }
 
+/* 表单行布局 */
 .form-row{
     display:flex;
-    gap:10px;
+    gap:12px;
+    align-items: center;
+    background: #f2f2f7;
+    padding: 6px;
+    border-radius: 14px;
+    margin-bottom: 20px;
 }
+/* 名称输入框 */
+.form-row input[type="text"]{
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 12px;
+    font-size: 16px;
+    outline: none;
+    color: #000;
+}
+/* 日历按钮包装器 */
 .calendar-wrapper{
-    width:45px;
-    height:45px;
-    border-radius:12px;
-    background:#f2f2f7;
+    width: 50px;
+    height: 44px;
+    background: white;
+    border-radius: 10px;
     display:flex;
     align-items:center;
     justify-content:center;
-    font-size:20px;
+    font-size:22px;
     position:relative;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    transition: background 0.2s;
 }
-
-.calendar-wrapper input{
+.calendar-wrapper:active {
+    background: #e5e5ea;
+}
+/* 隐藏原生日期输入但保留功能 */
+.calendar-wrapper input[type="date"]{
     position:absolute;
     width:100%;
     height:100%;
     opacity:0;
-}
-.form-row input[type="text"]{
-    flex:2;
-}
-
-.form-row input[type="date"]{
-    flex:1;
+    top: 0;
+    left: 0;
+    cursor: pointer;
 }
 
-input{
-    padding:10px;
-    border-radius:10px;
-    border:1px solid #ddd;
-    font-size:16px;
-}
-
+/* 保存按钮 */
 .save-btn{
-    margin-top:25px;
     width:100%;
     padding:16px;
     border:none;
     border-radius:14px;
     background:#007aff;
     color:white;
-    font-size:18px;
+    font-size:17px;
+    font-weight:600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+.save-btn:active {
+    opacity: 0.8;
 }
 
-.close-btn{
-    position:absolute;
-    top:25px;
-    right:25px;
-    font-size:28px;
-    font-weight:bold;
-    color:#333;
+.close-area {
+    position: absolute;
+    top: -100px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: -1;
 }
 </style>
-
 </head>
-
 <body>
 
 <header class="top-bar">
@@ -212,27 +267,26 @@ input{
 
 <div id="list"></div>
 
+<!-- 弹窗结构 -->
 <div class="modal" id="modal">
-    
-
-    <div class="modal-content">
-        <h2>又得到什么好吃的啦！</h2>
-
+    <div class="close-area" onclick="closeModal()"></div>
+    <div class="modal-content" id="modalContent">
+        <div class="modal-handle"></div>
+        <h2>又得到什么好吃的啦？</h2>
+        
         <div class="form-row">
-            <input id="name" type="text" placeholder="名称">
-
+            <input id="name" type="text" placeholder="填在这里！" autocomplete="off">
             <div class="calendar-wrapper">
+                <span>📅</span>
                 <input id="expireDate" type="date">
-                📅
             </div>
         </div>
 
-        <button class="save-btn" onclick="addItem()">Get！</button>
+        <button class="save-btn" onclick="addItem()">GET !</button>
     </div>
 </div>
 
 <script>
-
 let items = JSON.parse(localStorage.getItem("items") || "[]");
 let activeCard = null;
 
@@ -251,81 +305,109 @@ function daysLeft(dateStr){
 function render(){
     const list=document.getElementById("list");
     list.innerHTML="";
+    
+    if(items.length === 0) {
+        list.innerHTML = '<div style="text-align:center; color:#8e8e93; margin-top:50px; font-size:15px;">暂无记录<br>点击右上角 + 添加</div>';
+        return;
+    }
 
     items.sort((a,b)=> new Date(a.expireDate)-new Date(b.expireDate));
-
+    
     items.forEach(item=>{
         const days = daysLeft(item.expireDate);
-
         const container=document.createElement("div");
         container.className="swipe-container";
-
+        
         const btn=document.createElement("div");
         btn.className="delete-btn";
         btn.innerText="已吃";
         btn.onclick=(e)=>{
             e.stopPropagation();
-            if(confirm("确定吃掉啦？")){
+            // 简单的确认，也可替换为自定义模态框
+            if(confirm(`确定"${item.name}"已经吃完了吗？`)){
                 items=items.filter(i=>i.id!==item.id);
                 save();
                 render();
             }
         };
-
+        
         const card=document.createElement("div");
         card.className="card";
-
+        
+        // 状态类名
+        let statusClass = "e-safe";
+        let badgeClass = "badge-safe";
+        
         if(days < 0){
-            card.classList.add("e-expired");
+            statusClass = "e-expired";
+            badgeClass = "badge-expired";
+        } else if(days <= 3){
+            statusClass = "e-urgent";
+            badgeClass = "badge-urgent";
+        } else if(days <= 7){
+            statusClass = "e-warning";
+            badgeClass = "badge-warning";
         }
-        else if(days <= 3){
-            card.classList.add("e-urgent");
-        }
-        else if(days <= 7){
-            card.classList.add("e-warning");
-        }
-        else{
-            card.classList.add("e-safe");
-        }
-
+        
+        card.classList.add(statusClass);
+        
+        const daysText = days < 0 ? `过期${Math.abs(days)}天` : (days === 0 ? '今天' : `${days}`);
+        
         card.innerHTML=`
-            <div style="font-weight:bold;font-size:18px;">${item.name}</div>
-            <div>到期：${item.expireDate}</div>
-            <div class="days">
-                ${days<0 ? "已过期 "+Math.abs(days)+" 天" : "还有 "+days+" 天"}
+            <div class="card-left">
+                <div class="card-title">${item.name}</div>
+                <div class="card-date">${item.expireDate}</div>
+            </div>
+            <div class="day-badge ${badgeClass}">
+                ${daysText}
             </div>
         `;
-
+        
+        // 滑动逻辑
         let startX=0;
         let currentX=0;
+        let isSwiping = false;
 
         card.addEventListener("touchstart",e=>{
-            startX=e.touches[0].clientX;
-
             if(activeCard && activeCard!==card){
                 activeCard.style.transform="translateX(0)";
+                activeCard = null;
             }
-        });
-
+            startX=e.touches[0].clientX;
+            isSwiping = true;
+            card.style.transition = "none";
+        }, {passive: true});
+        
         card.addEventListener("touchmove",e=>{
+            if(!isSwiping) return;
             currentX=e.touches[0].clientX;
             let diff=currentX-startX;
-
             if(diff<0 && diff>-90){
                 card.style.transform=`translateX(${diff}px)`;
             }
-        });
-
+        }, {passive: true});
+        
         card.addEventListener("touchend",()=>{
+            if(!isSwiping) return;
+            isSwiping = false;
             let diff=currentX-startX;
-
+            card.style.transition="transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)";
+            
             if(diff<-50){
-                card.style.transform="translateX(-90px)";
+                card.style.transform="translateX(-80px)";
                 activeCard=card;
-            }else{
+            } else {
                 card.style.transform="translateX(0)";
                 activeCard=null;
             }
+        });
+        
+        // 点击卡片其他区域复位
+        card.addEventListener("click", () => {
+             if(activeCard === card) {
+                 card.style.transform="translateX(0)";
+                 activeCard = null;
+             }
         });
 
         container.appendChild(btn);
@@ -335,20 +417,23 @@ function render(){
 }
 
 function addItem(){
-    const name=document.getElementById("name").value;
+    const name=document.getElementById("name").value.trim();
     const date=document.getElementById("expireDate").value;
-
-    if(!name||!date) return;
-
+    
+    if(!name || !date){
+        alert("请填写名称并选择日期哦！");
+        return;
+    }
+    
     items.push({
         id:Date.now(),
         name:name,
         expireDate:date
     });
-
     save();
     render();
-
+    
+    // 重置表单
     document.getElementById("name").value="";
     document.getElementById("expireDate").value="";
     closeModal();
@@ -356,50 +441,60 @@ function addItem(){
 
 function openModal(){
     const modal = document.getElementById("modal");
-    modal.style.display = "flex";
+    const content = document.getElementById("modalContent");
+    modal.classList.add("active");
+    // 确保没有缩放动画，直接显示
+    content.style.transform = "translateY(0)";
     document.querySelector(".fab").style.display = "none";
+    
+    // 自动聚焦名称输入框
+    setTimeout(() => {
+        document.getElementById("name").focus();
+    }, 100);
 }
 
 function closeModal(){
     const modal = document.getElementById("modal");
-    modal.style.display = "none";
+    modal.classList.remove("active");
     document.querySelector(".fab").style.display = "flex";
+    
+    // 稍微延迟重置，避免视觉闪烁
+    setTimeout(() => {
+        document.getElementById("name").blur();
+    }, 300);
 }
-let startY = 0;
 
-const modal = document.getElementById("modal");
-const modalContent = document.querySelector(".modal-content");
+// 下拉关闭弹窗逻辑
+const modalContent = document.getElementById("modalContent");
+let startY = 0;
+let currentY = 0;
 
 modalContent.addEventListener("touchstart", function(e){
     startY = e.touches[0].clientY;
-});
+    this.style.transition = "none";
+}, {passive: true});
 
 modalContent.addEventListener("touchmove", function(e){
-    let currentY = e.touches[0].clientY;
+    currentY = e.touches[0].clientY;
     let diff = currentY - startY;
-
     if(diff > 0){
-        modalContent.style.transform = `translateY(${diff}px)`;
+        this.style.transform = `translateY(${diff}px)`;
     }
-});
+}, {passive: true});
 
-modalContent.addEventListener("touchend", function(e){
-    let endY = e.changedTouches[0].clientY;
-    let diff = endY - startY;
-
+modalContent.addEventListener("touchend", function(){
+    let diff = currentY - startY;
+    this.style.transition = "transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)";
     if(diff > 100){
         closeModal();
-        modalContent.style.transform = "translateY(0)";
-    }else{
-        modalContent.style.transform = "translateY(0)";
+        this.style.transform = "translateY(0)";
+    } else {
+        this.style.transform = "translateY(0)";
     }
 });
+
+// 初始化
 render();
-
 </script>
-
 </body>
 </html>
-
-
-
