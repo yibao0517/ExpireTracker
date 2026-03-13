@@ -272,13 +272,32 @@ header {
     <div class="modal-handle"></div>
     <div class="modal-title">又得到什么好吃的啦？</div>
     
-    <div class="input-row">
-        <input type="text" id="input-name" placeholder="放这里！" autocomplete="off">
-        <div class="calendar-btn">
-            📅
-            <input type="date" id="input-date">
-        </div>
+    <div class="input-row" style="flex-direction: column; gap: 12px;">
+  <!-- 名称输入 -->
+  <div style="display: flex; gap: 12px; width: 100%;">
+    <input type="text" id="input-name" placeholder="放这里！" autocomplete="off" style="flex: 1;">
+    <!-- 切换按钮 -->
+    <button type="button" class="calendar-btn" style="width: auto; padding: 0 12px; font-size: 14px; background: white;" onclick="toggleInputMode()">
+      <span id="mode-text">算天数</span>
+    </button>
+  </div>
+
+  <!-- 模式 1: 选择日期 (默认隐藏) -->
+  <div id="date-mode" style="display: none; width: 100%; justify-content: flex-end;">
+    <div class="calendar-btn" style="width: 100%;">
+      📅 
+      <input type="date" id="input-date" style="width: 100%;">
     </div>
+  </div>
+
+  <!-- 模式 2: 输入天数 (默认显示) -->
+  <div id="days-mode" style="display: flex; gap: 12px; width: 100%;">
+    <input type="number" id="input-days" placeholder="保质期几天？" min="1" style="flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #E5E5EA;">
+    <button type="button" class="save-btn" style="width: auto; padding: 0 20px; font-size: 15px;" onclick="calculateDate()">
+      计算
+    </button>
+  </div>
+</div>
 
     <button class="save-btn" onclick="saveItem()">GET!</button>
 </div>
@@ -484,6 +503,86 @@ modalPanel.addEventListener('touchend', e => {
 // 初始化
 render();
 document.getElementById('input-date').min = new Date().toISOString().split('T')[0];
+// --- 新增功能：保质期天数计算与切换逻辑 ---
+
+// 页面加载时初始化
+window.onload = function() {
+  // 初始化日期为今天（防止用户直接点保存而没选日期）
+  document.getElementById('input-date').valueAsDate = new Date();
+}
+
+// 切换输入模式
+function toggleInputMode() {
+  const dateMode = document.getElementById('date-mode');
+  const daysMode = document.getElementById('days-mode');
+  const modeText = document.getElementById('mode-text');
+  
+  if (dateMode.style.display === 'none') {
+    // 切换到 选择日期 模式
+    dateMode.style.display = 'flex';
+    daysMode.style.display = 'none';
+    modeText.textContent = '选日期';
+  } else {
+    // 切换到 算天数 模式
+    dateMode.style.display = 'none';
+    daysMode.style.display = 'flex';
+    modeText.textContent = '算天数';
+  }
+}
+
+// 计算过期日期
+function calculateDate() {
+  const name = document.getElementById('input-name').value.trim();
+  const daysInput = document.getElementById('input-days').value;
+  
+  if (!name) {
+    alert('请先填写食物名称');
+    return;
+  }
+  
+  if (!daysInput || daysInput <= 0) {
+    alert('请输入有效的天数');
+    return;
+  }
+
+  // 获取今天的日期
+  const today = new Date();
+  // 计算过期日 = 今天 + 天数
+  const expireDate = new Date(today);
+  expireDate.setDate(today.getDate() + parseInt(daysInput));
+
+  // 格式化日期为 YYYY-MM-DD (HTML date input 需要的格式)
+  const yyyy = expireDate.getFullYear();
+  let mm = expireDate.getMonth() + 1;
+  let dd = expireDate.getDate();
+  if (dd < 10) dd = '0' + dd;
+  if (mm < 10) mm = '0' + mm;
+  const formattedDate = yyyy + '-' + mm + '-' + dd;
+
+  // 填入日期框并切换模式
+  document.getElementById('input-date').value = formattedDate;
+  // 自动切换到日期模式以便用户确认
+  document.getElementById('date-mode').style.display = 'flex';
+  document.getElementById('days-mode').style.display = 'none';
+  document.getElementById('mode-text').textContent = '选日期';
+  
+  alert(`保质期 ${daysInput} 天，将在 ${formattedDate} 过期`);
+}
+
+// 修改后的保存函数 (需要覆盖原函数)
+function saveItem() {
+  const name = document.getElementById('input-name').value.trim();
+  const date = document.getElementById('input-date').value;
+  
+  if(!name || !date) {
+    alert('请填写名称并确定日期');
+    return;
+  }
+  
+  items.push({ id: Date.now(), name, date });
+  saveData(); // saveData 会自动调用 render()
+  closeModal();
+}
 </script>
 </body>
 </html>
