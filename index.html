@@ -278,7 +278,7 @@ header {
     <input type="text" id="input-name" placeholder="放这里！" autocomplete="off" style="flex: 1;">
     <!-- 切换按钮 -->
     <button type="button" class="calendar-btn" style="width: auto; padding: 0 12px; font-size: 14px; background: white;" onclick="toggleInputMode()">
-      <span id="mode-text">算天数</span>
+      <span id="mode-text">选日期</span>
     </button>
   </div>
 
@@ -521,12 +521,12 @@ function toggleInputMode() {
     // 切换到 选择日期 模式
     dateMode.style.display = 'flex';
     daysMode.style.display = 'none';
-    modeText.textContent = '选日期';
+    modeText.textContent = '算天数';
   } else {
-    // 切换到 算天数 模式
+    // 切换到 选日期 模式
     dateMode.style.display = 'none';
     daysMode.style.display = 'flex';
-    modeText.textContent = '算天数';
+    modeText.textContent = '选日期';
   }
 }
 
@@ -564,7 +564,7 @@ function calculateDate() {
   // 自动切换到日期模式以便用户确认
   document.getElementById('date-mode').style.display = 'flex';
   document.getElementById('days-mode').style.display = 'none';
-  document.getElementById('mode-text').textContent = '选日期';
+  document.getElementById('mode-text').textContent = '算天数';
   
   alert(`保质期 ${daysInput} 天，将在 ${formattedDate} 过期`);
 }
@@ -586,3 +586,4 @@ function saveItem() {
 </script>
 </body>
 </html>
+
